@@ -14,11 +14,8 @@ names(Data)
 
 ##Compute Mg/ha:
 NewDATA <- Data
-
 NewDATA$OC_percent <- ifelse(NewDATA$OC_percent == 0, 0.001, NewDATA$OC_percent)#convert 0 into 0.001 to run log-models if any
-
 NewDATA$CarbonDensity_gcm3 <- NewDATA$DBD_gcm3 * NewDATA$OC_percent/100
-
 NewDATA$CarbonStock_Mgha <- (((NewDATA$CarbonDensity_gcm3  / 1000000 ) *100000000) * NewDATA$SliceLength_cm )
 
 range(NewDATA$CarbonStock_Mgha, na.rm = T )# 0.7284566 33.4472622
