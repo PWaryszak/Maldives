@@ -2,7 +2,6 @@
 library(readxl)
 library(Hmisc)
 library(tidyverse)
-
 library(gridExtra)
 library(ggpmisc)
 
@@ -13,13 +12,18 @@ setwd("C:/Users/poles/Documents/00Deakin_Docs/R/BCL_R/Maldives")
 Data = read.csv('Maldives_CarbonData.csv')
 names(Data)
 
-
 ##Compute Mg/ha:
+unique(Data$DepthTo_cm) # 2 12 30 NA
+unique(Data$Dep) # 2 12 30 that is dpepth range was 0-2, 10-12 and 28-30
+
 NewDATA <- Data %>% 
             filter(Duplicated == "no") %>%   #Remove duplicated records
   
          # One sediment volume was sub-sampled at each 10cm of the core.
             mutate(SliceLength_cm = ifelse(DepthTo_cm < 29, 10,30)) #Use 28-30 slice as representative of entire core till 50cm. See photos on Team: below 50cm is all shell layer.
+
+unique(NewDATA$DepthTo_cm) # 2 12 30
+unique(NewDATA$SliceLength_cm)#10 30 (all above)
 
 #Percent_OC based on Lab calculation (presumably wrong)
 NewDATA$percent_OC <- ifelse(NewDATA$percent_OC == 0, 0.001, NewDATA$percent_OC)#convert 0 into 0.001 to run log-models if any
@@ -60,6 +64,19 @@ CoreCarbon <- NewDATA %>%  #Compute Carbon stock per core (sum all depths)
     group_by(CoreID, Island_FullName, ecosystem_full) %>%
     summarise(CoreCarbonStock = sum(CarbonStock_Mgha_eq, na.rm=T)) 
 CoreCarbon
+
+
+#Towards Result section:
+CoreCarbonStock_Results <- NewDATA %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(CoreID, Island_FullName, ecosystem_full) %>%
+  summarise(CoreCarbonStock = sum(CarbonStock_Mgha_eq, na.rm=T)) %>%
+  group_by(ecosystem_full) %>%
+  summarise(AV = mean(CoreCarbonStock, na.rm=T),
+            N=n(),
+            SD = sd(CoreCarbonStock, na.rm=T),
+            SE = SD/sqrt(N))
+
+CoreCarbonStock_Results
 
 #SOC Stock Bar Plot By Ecosystem on x-axis=======
 ggplot(CoreCarbon, aes(x = ecosystem_full, y = CoreCarbonStock, fill = ecosystem_full)) +
@@ -177,9 +194,19 @@ ggsave("PlotMaldives_CarbonStock_Eq.jpg", height = 7,width = 10)
 
 
 
-#POT DBD, OC , CD======
+#PLOT CD, DBD, OC======
 names(NewDATA)
+#Towards Result section:
+CoreCarbon_CD_Results <- NewDATA %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(ecosystem_full) %>%
+  summarise(AV = round(mean(CarbonDensity_gcm3_Eq*1000, na.rm=T),2),
+            N=n(),
+            SD = sd(CarbonDensity_gcm3_Eq*1000, na.rm=T),
+            SE = SD/sqrt(N))
 
+CoreCarbon_CD_Results 
+
+#Carbon Density
 a <-ggplot(NewDATA, aes(x=as.factor(Island_FullName), y=CarbonDensity_gcm3_Eq*1000,fill=ecosystem_full))+ #, fill = Island_Name
   geom_boxplot(outlier.shape = NA) +
   scale_fill_manual(values = c("#3399FF", "#339900"))+
@@ -201,6 +228,17 @@ a <-ggplot(NewDATA, aes(x=as.factor(Island_FullName), y=CarbonDensity_gcm3_Eq*10
 
 a
 
+#Dry Bulk Density:
+#Towards Result section:
+CoreCarbon_DBD_Results <- NewDATA %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(ecosystem_full) %>%
+  summarise(AV = round(mean(DBD_gcm3, na.rm=T),2),
+            N=n(),
+            SD = sd(DBD_gcm3, na.rm=T),
+            SE = SD/sqrt(N))
+
+CoreCarbon_DBD_Results 
+
 b <-ggplot(NewDATA, aes(x=as.factor(Island_FullName), y=DBD_gcm3,fill=ecosystem_full))+  #, fill = Island_Name
   geom_boxplot(outlier.shape = NA) +
   scale_fill_manual(values = c("#3399FF", "#339900"))+
@@ -217,6 +255,18 @@ b <-ggplot(NewDATA, aes(x=as.factor(Island_FullName), y=DBD_gcm3,fill=ecosystem_
         plot.title = element_text(hjust = 0.0,lineheight=1.2, face="bold",size=20))
 
 b
+
+
+#Organic Carbon (%):
+#Towards Result section:
+CoreCarbon_OC_Results <- NewDATA %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(ecosystem_full) %>%
+  summarise(AV = round(mean(percent_OC2, na.rm=T),2),
+            N=n(),
+            SD = sd(percent_OC2, na.rm=T),
+            SE = SD/sqrt(N))
+
+CoreCarbon_OC_Results 
 
 c<-ggplot(NewDATA, aes(x=as.factor(Island_FullName), y=percent_OC2,fill=ecosystem_full))+  #, fill = Island_Name
   geom_boxplot(outlier.shape = NA) +
@@ -244,8 +294,18 @@ ggsave(plot1 , dpi=600, width = 12, height = 15,
        filename = "BoxPlot_Maldives.png")
 
 
-#PLOT3 (Soil By Depth)=======
+#PLOT3 (Soil parameters by Depth)=======
 names(NewDATA1)
+#Towards Result section:
+CoreCarbon_CD_Depth_Results <- NewDATA1 %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(ecosystem_full,Depth) %>%
+  summarise(AV = round(mean(CarbonDensity_gcm3_Eq*1000, na.rm=T),2),
+            N=n(),
+            SD = sd(CarbonDensity_gcm3_Eq*1000, na.rm=T),
+            SE = SD/sqrt(N))
+
+CoreCarbon_CD_Depth_Results 
+
 
 o1<-ggplot(NewDATA1, aes(y=Depth, x=CarbonDensity_gcm3_Eq*1000))+
   geom_boxplot(outlier.shape = NA) +
@@ -267,6 +327,18 @@ o1<-ggplot(NewDATA1, aes(y=Depth, x=CarbonDensity_gcm3_Eq*1000))+
 
 o1
 
+
+#Dry Bulk Density by Depth:
+#Towards Result section:
+CoreCarbon_DBD_Depth_Results <- NewDATA1 %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(ecosystem_full, Depth) %>%
+  summarise(AV = round(mean(DBD_gcm3, na.rm=T),2),
+            N=n(),
+            SD = sd(DBD_gcm3, na.rm=T),
+            SE = SD/sqrt(N))
+
+CoreCarbon_DBD_Depth_Results 
+
 o2<-ggplot(NewDATA1, aes(y=Depth, x=DBD_gcm3))+
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(aes(color = Island_FullName),size=3)+   #aes(color = Island_Name)
@@ -286,6 +358,31 @@ o2<-ggplot(NewDATA1, aes(y=Depth, x=DBD_gcm3))+
 
 
 o2
+
+
+#OC,
+#Towards Result section:
+CoreCarbon_OC_depth_Results <- NewDATA1 %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(ecosystem_full, Depth) %>%
+  summarise(AV = round(mean(percent_OC2, na.rm=T),2),
+            N=n(),
+            SD = sd(percent_OC2, na.rm=T),
+            SE = SD/sqrt(N))
+
+CoreCarbon_OC_depth_Results 
+
+
+
+#Organic Carbon (%):
+#Towards Result section:
+CoreCarbon_OC_Depth_Results <- NewDATA1 %>%  #Compute Carbon stock per core (sum all depths)
+  group_by(ecosystem_full,Depth) %>%
+  summarise(AV = round(mean(percent_OC2, na.rm=T),2),
+            N=n(),
+            SD = sd(percent_OC2, na.rm=T),
+            SE = SD/sqrt(N))
+
+CoreCarbon_OC_Depth_Results 
 
 o3<-ggplot(NewDATA1, aes(y=Depth, x=percent_OC2))+
   geom_boxplot(outlier.shape = NA) +
